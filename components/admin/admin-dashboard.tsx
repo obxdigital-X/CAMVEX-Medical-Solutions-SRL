@@ -22,6 +22,7 @@ import { ActivityPanel } from "./activity-panel"
 import { PartnersPanel } from "./partners-panel"
 import { SupportButton } from "./support-button"
 import { ChangeMyPassword } from "./change-my-password"
+import { FeatureLocked } from "./feature-locked"
 import "./admin.css"
 
 type Tab = "users" | "catalog" | "messages" | "content" | "sheets" | "quotes" | "cache" | "partners"
@@ -54,16 +55,24 @@ export function AdminDashboard({
   const canSheets = me.isAdmin || me.permissions.includes("sheets")
   const canQuotes = me.isAdmin || me.permissions.includes("quotes")
 
-  // First available tab for this user.
+  // A feature is VISIBLE if granted OR the admin chose to show it. When visible
+  // but not granted, its tab appears but renders a "locked" notice instead of
+  // the working panel.
+  const showCatalog = canCatalog || me.visibleFeatures.includes("catalog")
+  const showMessages = canMessages || me.visibleFeatures.includes("messages")
+  const showSheets = canSheets || me.visibleFeatures.includes("sheets")
+  const showQuotes = canQuotes || me.visibleFeatures.includes("quotes")
+
+  // First available tab for this user (any visible tab counts).
   const firstTab: Tab = me.isAdmin
     ? "users"
-    : canCatalog
+    : showCatalog
       ? "catalog"
-      : canMessages
+      : showMessages
         ? "messages"
-        : canSheets
+        : showSheets
           ? "sheets"
-          : canQuotes
+          : showQuotes
             ? "quotes"
             : "users"
   const [tab, setTab] = useState<Tab>(firstTab)
@@ -109,25 +118,29 @@ export function AdminDashboard({
               Usuarios
             </button>
           )}
-          {canCatalog && (
+          {showCatalog && (
             <button className={tab === "catalog" ? "active" : ""} onClick={() => setTab("catalog")}>
               Catálogo
+              {!canCatalog && <span className="admin-nav-lock" aria-label="No habilitada">🔒</span>}
             </button>
           )}
-          {canMessages && (
+          {showMessages && (
             <button className={tab === "messages" ? "active" : ""} onClick={() => setTab("messages")}>
               Mensajes
-              {initialUnread > 0 && <span className="admin-nav-badge">{initialUnread}</span>}
+              {canMessages && initialUnread > 0 && <span className="admin-nav-badge">{initialUnread}</span>}
+              {!canMessages && <span className="admin-nav-lock" aria-label="No habilitada">🔒</span>}
             </button>
           )}
-          {canSheets && (
+          {showSheets && (
             <button className={tab === "sheets" ? "active" : ""} onClick={() => setTab("sheets")}>
               Fichas técnicas
+              {!canSheets && <span className="admin-nav-lock" aria-label="No habilitada">🔒</span>}
             </button>
           )}
-          {canQuotes && (
+          {showQuotes && (
             <button className={tab === "quotes" ? "active" : ""} onClick={() => setTab("quotes")}>
               Cotizaciones
+              {!canQuotes && <span className="admin-nav-lock" aria-label="No habilitada">🔒</span>}
             </button>
           )}
           {me.isAdmin && (
@@ -155,10 +168,14 @@ export function AdminDashboard({
 
         <main className="admin-main">
           {tab === "users" && me.isAdmin && <UsersPanel me={me} initialUsers={initialUsers} />}
-          {tab === "catalog" && canCatalog && <CatalogPanel initialEquipment={initialEquipment} />}
-          {tab === "messages" && canMessages && <MessagesPanel initialMessages={initialMessages} />}
-          {tab === "sheets" && canSheets && <DataSheetsPanel initialSheets={initialSheets} />}
-          {tab === "quotes" && canQuotes && <QuotationsPanel initialQuotations={initialQuotations} />}
+          {tab === "catalog" &&
+            (canCatalog ? <CatalogPanel initialEquipment={initialEquipment} /> : <FeatureLocked title="Catálogo" />)}
+          {tab === "messages" &&
+            (canMessages ? <MessagesPanel initialMessages={initialMessages} /> : <FeatureLocked title="Mensajes" />)}
+          {tab === "sheets" &&
+            (canSheets ? <DataSheetsPanel initialSheets={initialSheets} /> : <FeatureLocked title="Fichas técnicas" />)}
+          {tab === "quotes" &&
+            (canQuotes ? <QuotationsPanel initialQuotations={initialQuotations} /> : <FeatureLocked title="Cotizaciones" />)}
           {tab === "content" && me.isAdmin && <ContentPanel initialContent={initialContent} />}
           {tab === "partners" && me.isAdmin && <PartnersPanel initialPartners={initialPartners} />}
           {tab === "cache" && me.isAdmin && <ActivityPanel initialActivity={initialActivity} />}

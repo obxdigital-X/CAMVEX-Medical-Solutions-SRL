@@ -163,6 +163,42 @@
   width: 28px;
   height: 28px;
 }
+/* Per-feature permission + visibility controls in the Usuarios table */
+.admin-feat-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-feat-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.admin-feat-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.admin-feat-name {
+  font-size: 13px;
+  color: var(--navy);
+  font-weight: 600;
+}
+.admin-feat-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--slate);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.admin-feat-toggle:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .admin-caps-warning {
   display: inline-flex;
   align-items: center;
@@ -403,6 +439,57 @@
   padding: 1px 7px;
   min-width: 20px;
   text-align: center;
+}
+.admin-nav button .admin-nav-lock {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.65;
+  line-height: 1;
+}
+/* Locked feature notice (visible but not granted) */
+.admin-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  max-width: 440px;
+  margin: 48px auto;
+  padding: 40px 28px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.admin-locked-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  color: var(--slate);
+  background: var(--paper-2);
+}
+.admin-locked h2 {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 20px;
+  color: var(--navy);
+  letter-spacing: -0.02em;
+}
+.admin-locked p {
+  font-size: 14px;
+  color: var(--slate);
+  line-height: 1.55;
+}
+.admin-locked-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #b45309;
+  background: rgba(180, 83, 9, 0.12);
+  border-radius: 20px;
+  padding: 5px 12px;
 }
 .admin-main {
   flex: 1;
