@@ -33,7 +33,17 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: blob.url })
   } catch (error) {
-    console.log("[v0] upload error:", error instanceof Error ? error.message : error)
-    return NextResponse.json({ error: "No se pudo subir la imagen." }, { status: 500 })
+    const raw = error instanceof Error ? error.message : String(error)
+    console.log("[v0] upload error:", raw)
+    // Surface a clear cause instead of a generic message. A suspended store is
+    // an account/billing issue on Vercel, not something the code can fix.
+    let message = "No se pudo subir la imagen."
+    if (/suspended/i.test(raw)) {
+      message =
+        "El almacenamiento de archivos (Vercel Blob) está suspendido. Reactívalo en el panel de Vercel (Storage) para poder subir imágenes."
+    } else if (/quota|limit|exceeded/i.test(raw)) {
+      message = "Se alcanzó el límite de almacenamiento. Revisa tu plan de Vercel Blob."
+    }
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
