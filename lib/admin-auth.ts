@@ -16,6 +16,9 @@ export type AdminUser = {
   role: string | null
   isAdmin: boolean
   permissions: Permission[]
+  // Features shown to this user even without the matching permission. Always
+  // includes everything in `permissions` (a granted feature is always visible).
+  visibleFeatures: Permission[]
   maintenance: boolean
 }
 
@@ -35,6 +38,7 @@ export async function getAdminUser(): Promise<AdminUser | null> {
       username: user.username,
       role: user.role,
       permissions: user.permissions,
+      visibleFeatures: user.visibleFeatures,
       maintenance: user.maintenance,
     })
     .from(user)
@@ -44,19 +48,24 @@ export async function getAdminUser(): Promise<AdminUser | null> {
   const u = rows[0]
   if (!u) return null
 
-  const isAdmin = u.role === "admin"
-  let permissions: Permission[] = []
-  if (isAdmin) {
-    permissions = [...ALL_PERMISSIONS]
-  } else if (u.permissions) {
+  const parsePerms = (raw: string | null): Permission[] => {
+    if (!raw) return []
     try {
-      const parsed = JSON.parse(u.permissions)
+      const parsed = JSON.parse(raw)
       if (Array.isArray(parsed))
-        permissions = parsed.filter((p): p is Permission => (ALL_PERMISSIONS as string[]).includes(p))
-    } catch {
-      permissions = []
-    }
+        return parsed.filter((p): p is Permission => (ALL_PERMISSIONS as string[]).includes(p))
+    } catch {}
+    return []
   }
+
+  const isAdmin = u.role === "admin"
+  const permissions: Permission[] = isAdmin ? [...ALL_PERMISSIONS] : parsePerms(u.permissions)
+
+  // Visible = explicitly shown features UNION granted permissions (a granted
+  // feature is always visible). Admins see everything.
+  const visibleFeatures: Permission[] = isAdmin
+    ? [...ALL_PERMISSIONS]
+    : Array.from(new Set<Permission>([...permissions, ...parsePerms(u.visibleFeatures)]))
 
   return {
     id: u.id,
@@ -65,6 +74,7 @@ export async function getAdminUser(): Promise<AdminUser | null> {
     role: u.role,
     isAdmin,
     permissions,
+    visibleFeatures,
     // Admins can never be locked out of their own control panel.
     maintenance: isAdmin ? false : Boolean(u.maintenance),
   }

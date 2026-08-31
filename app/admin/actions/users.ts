@@ -23,6 +23,8 @@ export type ManagedUser = {
   username: string | null
   role: string | null
   permissions: Permission[]
+  // Features the admin chose to show even without permission (locked view).
+  visibleFeatures: Permission[]
   maintenance: boolean
   createdAt: string
   // Decrypted recoverable password for admin viewing. Null when it was never
@@ -39,6 +41,7 @@ export async function listUsers(): Promise<ManagedUser[]> {
       username: user.username,
       role: user.role,
       permissions: user.permissions,
+      visibleFeatures: user.visibleFeatures,
       maintenance: user.maintenance,
       createdAt: user.createdAt,
       recoveryPassword: user.recoveryPassword,
@@ -46,16 +49,25 @@ export async function listUsers(): Promise<ManagedUser[]> {
     .from(user)
     .orderBy(desc(user.createdAt))
 
-  return rows.map((r) => ({
-    id: r.id,
-    name: r.name,
-    username: r.username,
-    role: r.role,
-    permissions: r.role === "admin" ? VALID_PERMS : sanitizePerms(safeParse(r.permissions)),
-    maintenance: Boolean(r.maintenance),
-    createdAt: r.createdAt.toISOString(),
-    password: decryptSecret(r.recoveryPassword),
-  }))
+  return rows.map((r) => {
+    const perms = r.role === "admin" ? VALID_PERMS : sanitizePerms(safeParse(r.permissions))
+    // Visible = granted permissions UNION explicitly-shown features.
+    const visible =
+      r.role === "admin"
+        ? VALID_PERMS
+        : Array.from(new Set<Permission>([...perms, ...sanitizePerms(safeParse(r.visibleFeatures))]))
+    return {
+      id: r.id,
+      name: r.name,
+      username: r.username,
+      role: r.role,
+      permissions: perms,
+      visibleFeatures: visible,
+      maintenance: Boolean(r.maintenance),
+      createdAt: r.createdAt.toISOString(),
+      password: decryptSecret(r.recoveryPassword),
+    }
+  })
 }
 
 function safeParse(v: string | null): unknown {
@@ -197,6 +209,33 @@ export async function updateUserPermissions(input: {
     "updated",
     "Usuarios",
     `Cambió los permisos de “${target[0].name}” a: ${perms.length ? perms.join(", ") : "ninguno"}`,
+  )
+  revalidatePath("/admin/dashboard")
+  return { ok: true }
+}
+
+/**
+ * Sets which features are VISIBLE to an editor even when the matching permission
+ * is not granted. A visible-but-not-granted feature shows a "función no
+ * habilitada por el administrador" notice instead of the working panel.
+ */
+export async function updateUserVisibleFeatures(input: {
+  userId: string
+  visibleFeatures: Permission[]
+}): Promise<{ ok: boolean; error?: string }> {
+  const me = await requireFullAdmin()
+  const visible = sanitizePerms(input.visibleFeatures)
+
+  const target = await db.select({ role: user.role, name: user.name }).from(user).where(eq(user.id, input.userId)).limit(1)
+  if (target.length === 0) return { ok: false, error: "Usuario no encontrado." }
+  if (target[0].role === "admin") return { ok: false, error: "El administrador ya ve todas las funciones." }
+
+  await db.update(user).set({ visibleFeatures: JSON.stringify(visible) }).where(eq(user.id, input.userId))
+  await logActivity(
+    me,
+    "updated",
+    "Usuarios",
+    `Cambió las funciones visibles de “${target[0].name}” a: ${visible.length ? visible.join(", ") : "ninguna"}`,
   )
   revalidatePath("/admin/dashboard")
   return { ok: true }

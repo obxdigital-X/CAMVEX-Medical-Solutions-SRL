@@ -21,6 +21,11 @@ export const user = pgTable("user", {
   banExpires: timestamp("banExpires"),
   // custom fine-grained permissions (JSON array string), e.g. ["manage_catalog","view_messages"]
   permissions: text("permissions"),
+  // Features the admin has chosen to SHOW to this user even when the matching
+  // permission is not granted. Stored as a JSON array of permission keys. A
+  // shown-but-not-granted feature renders a "no habilitada por el administrador"
+  // notice instead of the real panel. Granted permissions are always visible.
+  visibleFeatures: text("visibleFeatures"),
   // when true, the admin has locked this user out with a maintenance notice
   maintenance: boolean("maintenance").notNull().default(false),
   // Admin-recoverable copy of the current password, encrypted at rest with

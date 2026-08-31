@@ -9,6 +9,7 @@ import {
   createUser,
   deleteUser,
   updateUserPermissions,
+  updateUserVisibleFeatures,
   setUserPassword,
   setUserMaintenance,
 } from "@/app/admin/actions/users"
@@ -118,6 +119,7 @@ export function UsersPanel({ me, initialUsers }: { me: AdminUser; initialUsers: 
         username: username.trim().toLowerCase(),
         role: "editor",
         permissions: perms,
+        visibleFeatures: perms,
         maintenance: false,
         createdAt: new Date().toISOString(),
         password: createdPassword,
@@ -129,10 +131,31 @@ export function UsersPanel({ me, initialUsers }: { me: AdminUser; initialUsers: 
 
   async function handleTogglePerm(u: ManagedUser, p: Permission) {
     const next = togglePerm(u.permissions, p)
-    setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, permissions: next } : x)))
+    // A granted permission is always visible; keep the visible set in sync.
+    const nextVisible = next.includes(p)
+      ? Array.from(new Set([...u.visibleFeatures, p]))
+      : u.visibleFeatures
+    setUsers((prev) =>
+      prev.map((x) => (x.id === u.id ? { ...x, permissions: next, visibleFeatures: nextVisible } : x)),
+    )
     const res = await updateUserPermissions({ userId: u.id, permissions: next })
     if (!res.ok) {
       setNote({ type: "err", text: res.error ?? "No se pudo actualizar." })
+      refresh()
+    }
+  }
+
+  // Toggles whether a feature is shown to the user even when not granted. When a
+  // feature is currently granted it stays visible, so this only matters for
+  // features the user does NOT have permission to use.
+  async function handleToggleVisible(u: ManagedUser, p: Permission) {
+    const next = togglePerm(u.visibleFeatures, p)
+    // Never hide a feature the user actually has permission to use.
+    const cleaned = u.permissions.includes(p) ? Array.from(new Set([...next, p])) : next
+    setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, visibleFeatures: cleaned } : x)))
+    const res = await updateUserVisibleFeatures({ userId: u.id, visibleFeatures: cleaned })
+    if (!res.ok) {
+      setNote({ type: "err", text: res.error ?? "No se pudo actualizar la visibilidad." })
       refresh()
     }
   }
@@ -253,21 +276,42 @@ export function UsersPanel({ me, initialUsers }: { me: AdminUser; initialUsers: 
                   {isAdminRow ? (
                     <span style={{ color: "var(--slate)", fontSize: 13 }}>Todos los permisos</span>
                   ) : (
-                    <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-                      {PERMISSIONS.map((p) => (
-                        <label
-                          key={p.key}
-                          style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={u.permissions.includes(p.key)}
-                            onChange={() => handleTogglePerm(u, p.key)}
-                            style={{ accentColor: "var(--cyan)" }}
-                          />
-                          {p.label}
-                        </label>
-                      ))}
+                    <div className="admin-feat-grid">
+                      {PERMISSIONS.map((p) => {
+                        const granted = u.permissions.includes(p.key)
+                        const visible = granted || u.visibleFeatures.includes(p.key)
+                        return (
+                          <div key={p.key} className="admin-feat-row">
+                            <span className="admin-feat-name">{p.label}</span>
+                            <label className="admin-feat-toggle" title="Puede usar esta función.">
+                              <input
+                                type="checkbox"
+                                checked={granted}
+                                onChange={() => handleTogglePerm(u, p.key)}
+                                style={{ accentColor: "var(--cyan)" }}
+                              />
+                              Habilitado
+                            </label>
+                            <label
+                              className="admin-feat-toggle"
+                              title={
+                                granted
+                                  ? "Al estar habilitada, siempre es visible."
+                                  : "Mostrar la sección bloqueada, con aviso de que aún no está habilitada."
+                              }
+                            >
+                              <input
+                                type="checkbox"
+                                checked={visible}
+                                disabled={granted}
+                                onChange={() => handleToggleVisible(u, p.key)}
+                                style={{ accentColor: "var(--navy)" }}
+                              />
+                              Visible
+                            </label>
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </td>
