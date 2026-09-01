@@ -20,12 +20,14 @@ import { DataSheetsPanel } from "./data-sheets-panel"
 import { QuotationsPanel } from "./quotations-panel"
 import { ActivityPanel } from "./activity-panel"
 import { PartnersPanel } from "./partners-panel"
+import { StatsPanel } from "./stats-panel"
+import type { VisitStats } from "@/app/admin/actions/stats"
 import { SupportButton } from "./support-button"
 import { ChangeMyPassword } from "./change-my-password"
 import { FeatureLocked } from "./feature-locked"
 import "./admin.css"
 
-type Tab = "users" | "catalog" | "messages" | "content" | "sheets" | "quotes" | "cache" | "partners"
+type Tab = "users" | "catalog" | "messages" | "content" | "sheets" | "quotes" | "cache" | "partners" | "stats"
 
 export function AdminDashboard({
   me,
@@ -38,6 +40,7 @@ export function AdminDashboard({
   initialQuotations,
   initialActivity,
   initialPartners,
+  initialStats,
 }: {
   me: AdminUser
   initialUsers: ManagedUser[]
@@ -49,11 +52,13 @@ export function AdminDashboard({
   initialQuotations: Quotation[]
   initialActivity: ActivityEntry[]
   initialPartners: Partner[]
+  initialStats: VisitStats
 }) {
   const canCatalog = me.isAdmin || me.permissions.includes("catalog")
   const canMessages = me.isAdmin || me.permissions.includes("messages")
   const canSheets = me.isAdmin || me.permissions.includes("sheets")
   const canQuotes = me.isAdmin || me.permissions.includes("quotes")
+  const canStats = me.isAdmin || me.permissions.includes("stats")
 
   // A feature is VISIBLE if granted OR the admin chose to show it. When visible
   // but not granted, its tab appears but renders a "locked" notice instead of
@@ -62,6 +67,7 @@ export function AdminDashboard({
   const showMessages = canMessages || me.visibleFeatures.includes("messages")
   const showSheets = canSheets || me.visibleFeatures.includes("sheets")
   const showQuotes = canQuotes || me.visibleFeatures.includes("quotes")
+  const showStats = canStats || me.visibleFeatures.includes("stats")
 
   // First available tab for this user (any visible tab counts).
   const firstTab: Tab = me.isAdmin
@@ -74,7 +80,9 @@ export function AdminDashboard({
           ? "sheets"
           : showQuotes
             ? "quotes"
-            : "users"
+            : showStats
+              ? "stats"
+              : "users"
   const [tab, setTab] = useState<Tab>(firstTab)
   const [loggingOut, setLoggingOut] = useState(false)
 
@@ -143,6 +151,12 @@ export function AdminDashboard({
               {!canQuotes && <span className="admin-nav-lock" aria-label="No habilitada">🔒</span>}
             </button>
           )}
+          {showStats && (
+            <button className={tab === "stats" ? "active" : ""} onClick={() => setTab("stats")}>
+              Estadísticas
+              {!canStats && <span className="admin-nav-lock" aria-label="No habilitada">🔒</span>}
+            </button>
+          )}
           {me.isAdmin && (
             <button className={tab === "content" ? "active" : ""} onClick={() => setTab("content")}>
               Textos del sitio
@@ -176,6 +190,8 @@ export function AdminDashboard({
             (canSheets ? <DataSheetsPanel initialSheets={initialSheets} /> : <FeatureLocked title="Fichas técnicas" />)}
           {tab === "quotes" &&
             (canQuotes ? <QuotationsPanel initialQuotations={initialQuotations} /> : <FeatureLocked title="Cotizaciones" />)}
+          {tab === "stats" &&
+            (canStats ? <StatsPanel initialStats={initialStats} /> : <FeatureLocked title="Estadísticas" />)}
           {tab === "content" && me.isAdmin && <ContentPanel initialContent={initialContent} />}
           {tab === "partners" && me.isAdmin && <PartnersPanel initialPartners={initialPartners} />}
           {tab === "cache" && me.isAdmin && <ActivityPanel initialActivity={initialActivity} />}
