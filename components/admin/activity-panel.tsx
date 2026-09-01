@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { clearActivity, type ActivityEntry } from "@/app/admin/actions/activity"
+import useSWR from "swr"
+import { clearActivity, listActivity, type ActivityEntry } from "@/app/admin/actions/activity"
 
 const ACTION_LABEL: Record<string, string> = {
   created: "Creó",
@@ -53,14 +54,25 @@ export function ActivityPanel({ initialActivity }: { initialActivity: ActivityEn
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<{ type: "ok" | "err"; text: string } | null>(null)
 
+  // Live audit trail: SWR polls every 15s and refetches when the admin returns
+  // to the tab, so logins and changes made from other users' devices appear
+  // without a full page reload. `initialActivity` (from the server) seeds the
+  // first render so there is no loading flash.
+  const { data, isValidating, mutate } = useSWR<ActivityEntry[]>("admin-activity", () => listActivity(), {
+    fallbackData: initialActivity,
+    refreshInterval: 15000,
+    revalidateOnFocus: true,
+  })
+  const activity = data ?? initialActivity
+
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
-    return initialActivity.filter((e) => {
+    return activity.filter((e) => {
       if (moduleFilter && e.entity !== moduleFilter) return false
       if (!needle) return true
       return [e.actorName, e.actorUsername, e.entity, e.summary].join(" ").toLowerCase().includes(needle)
     })
-  }, [initialActivity, query, moduleFilter])
+  }, [activity, query, moduleFilter])
 
   async function handleClear(olderThanDays?: number) {
     const label = olderThanDays
@@ -72,6 +84,7 @@ export function ActivityPanel({ initialActivity }: { initialActivity: ActivityEn
     try {
       await clearActivity(olderThanDays)
       setNote({ type: "ok", text: "Historial actualizado." })
+      await mutate()
       router.refresh()
     } catch {
       setNote({ type: "err", text: "No se pudo actualizar el historial." })
@@ -86,18 +99,23 @@ export function ActivityPanel({ initialActivity }: { initialActivity: ActivityEn
         <div>
           <h2>Caché</h2>
           <p>
-            Registro de auditoría de todos los cambios hechos por los usuarios del panel: creaciones, ediciones y
-            eliminaciones en cada módulo. Solo el administrador puede verlo.
+            Registro de auditoría de todos los cambios hechos por los usuarios del panel: entradas y salidas,
+            creaciones, ediciones y eliminaciones en cada módulo. Se actualiza automáticamente. Solo el administrador
+            puede verlo.
           </p>
         </div>
         <div className="cache-head-actions">
-          <button className="admin-btn" onClick={() => handleClear(30)} disabled={busy || initialActivity.length === 0}>
+          <button className="admin-btn" onClick={() => mutate()} disabled={isValidating}>
+            <span className={`cache-live-dot ${isValidating ? "is-syncing" : ""}`} aria-hidden="true" />
+            {isValidating ? "Actualizando…" : "Actualizar"}
+          </button>
+          <button className="admin-btn" onClick={() => handleClear(30)} disabled={busy || activity.length === 0}>
             Limpiar +30 días
           </button>
           <button
             className="admin-btn admin-btn-danger"
             onClick={() => handleClear()}
-            disabled={busy || initialActivity.length === 0}
+            disabled={busy || activity.length === 0}
           >
             Borrar todo
           </button>
@@ -106,7 +124,7 @@ export function ActivityPanel({ initialActivity }: { initialActivity: ActivityEn
 
       {note && <div className={`admin-note ${note.type}`}>{note.text}</div>}
 
-      {initialActivity.length > 0 && (
+      {activity.length > 0 && (
         <>
           <div className="admin-search">
             <svg className="admin-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -143,7 +161,7 @@ export function ActivityPanel({ initialActivity }: { initialActivity: ActivityEn
         </>
       )}
 
-      {initialActivity.length === 0 ? (
+      {activity.length === 0 ? (
         <div className="admin-empty">Aún no hay actividad registrada. Los cambios en el panel aparecerán aquí.</div>
       ) : filtered.length === 0 ? (
         <div className="admin-empty">No hay registros que coincidan con el filtro.</div>

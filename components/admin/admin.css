@@ -656,6 +656,30 @@
   gap: 8px;
   flex-shrink: 0;
 }
+.cache-head-actions .admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.cache-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a05c;
+  box-shadow: 0 0 0 3px rgba(16, 160, 92, 0.18);
+}
+.cache-live-dot.is-syncing {
+  animation: cache-pulse 1s ease-in-out infinite;
+}
+@keyframes cache-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
 .cache-filters {
   display: flex;
   flex-wrap: wrap;
