@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth"
 import { username, admin } from "better-auth/plugins"
+import { nextCookies } from "better-auth/next-js"
 import { pool } from "@/lib/db"
 
 export const auth = betterAuth({
@@ -19,6 +20,13 @@ export const auth = betterAuth({
   plugins: [
     username(),
     admin(),
+    // MUST be last. Forwards Better Auth's Set-Cookie headers into Next.js
+    // when auth.api.* runs inside a Server Action (e.g. endAdminSession's
+    // signOut). Without it, logout revokes the session in the DB but the stale
+    // cookie stays in the browser, so the next login is sent with an invalid
+    // cookie and rejected — appearing as "contraseña incorrecta" until the user
+    // manually clears cookies.
+    nextCookies(),
   ],
   trustedOrigins: [
     ...(process.env.NODE_ENV === "development"
