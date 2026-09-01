@@ -15,6 +15,12 @@ export function AdminLogin() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [capsOn, setCapsOn] = useState(false)
+  // Show a notice when the previous session was closed by the 10-min idle timer
+  // (the dashboard redirects here with ?timeout=1 in that case).
+  const [idleClosed] = useState(() => {
+    if (typeof window === "undefined") return false
+    return new URLSearchParams(window.location.search).get("timeout") === "1"
+  })
 
   // Track Caps Lock so we can warn the user before they submit a wrong password.
   function checkCaps(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -59,6 +65,12 @@ export function AdminLogin() {
           <h1>Panel de administración</h1>
           <p>Inicia sesión para gestionar el sitio.</p>
         </div>
+
+        {idleClosed ? (
+          <p className="admin-auth-notice" role="status">
+            Tu sesión se cerró automáticamente por 10 minutos de inactividad. Vuelve a iniciar sesión.
+          </p>
+        ) : null}
 
         <label className="admin-field">
           <span>Usuario</span>
