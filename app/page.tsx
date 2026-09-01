@@ -1,4 +1,5 @@
 import { CamvexSite } from "@/components/camvex-site"
+import { SiteVisitTracker } from "@/components/site-visit-tracker"
 import { getPublicEquipmentByLang } from "@/app/admin/actions/equipment"
 import { getPublicContent } from "@/app/admin/actions/content"
 import { getPublicPartners } from "@/app/admin/actions/partners"
@@ -11,5 +12,10 @@ export default async function Page() {
     getPublicContent(),
     getPublicPartners(),
   ])
-  return <CamvexSite equipmentByLang={equipmentByLang} content={content} partners={partners} />
+  return (
+    <>
+      <SiteVisitTracker />
+      <CamvexSite equipmentByLang={equipmentByLang} content={content} partners={partners} />
+    </>
+  )
 }

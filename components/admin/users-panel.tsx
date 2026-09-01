@@ -46,6 +46,7 @@ const PERMISSIONS: { key: Permission; label: string; hint: string }[] = [
   { key: "messages", label: "Ver mensajes/contactos", hint: "Leer las solicitudes del formulario de contacto." },
   { key: "sheets", label: "Gestionar fichas técnicas", hint: "Crear, editar y descargar fichas técnicas de productos." },
   { key: "quotes", label: "Gestionar cotizaciones", hint: "Crear, editar y descargar cotizaciones para clientes." },
+  { key: "stats", label: "Ver estadísticas", hint: "Ver las visitas del sitio web: país y vía de entrada." },
 ]
 
 export function UsersPanel({ me, initialUsers }: { me: AdminUser; initialUsers: ManagedUser[] }) {
