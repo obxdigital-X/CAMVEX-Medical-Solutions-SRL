@@ -521,7 +521,7 @@ export function CamvexSite({
               <div className="cat-card" key={c.id}>
                 <div className="cat-media">
                   {c.tag ? <span className="model-tag">{c.tag}</span> : null}
-                  <img src={c.image || "/placeholder.svg"} alt={c.name} />
+                  <img src={c.image || "/placeholder.svg"} alt={c.name} loading="lazy" decoding="async" />
                 </div>
                 <div className="cat-body">
                   <h3>{c.name}</h3>

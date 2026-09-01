@@ -4,10 +4,10 @@ import { user } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { headers } from "next/headers"
 
-export type Permission = "catalog" | "messages" | "sheets" | "quotes"
+export type Permission = "catalog" | "messages" | "sheets" | "quotes" | "stats"
 
 /** Every permission an editor can be granted. Admins implicitly have all of them. */
-export const ALL_PERMISSIONS: Permission[] = ["catalog", "messages", "sheets", "quotes"]
+export const ALL_PERMISSIONS: Permission[] = ["catalog", "messages", "sheets", "quotes", "stats"]
 
 export type AdminUser = {
   id: string

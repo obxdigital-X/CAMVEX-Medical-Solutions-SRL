@@ -214,3 +214,15 @@ export const activityLog = pgTable("activity_log", {
   summary: text("summary").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
+
+// Website analytics. One row per public-site visit (deduped per browser session
+// on the client). Powers the "Estadísticas" panel: how many people visit, from
+// which country, and through which channel (Instagram, Google, direct link…).
+export const siteVisit = pgTable("site_visit", {
+  id: serial("id").primaryKey(),
+  path: text("path").notNull().default("/"),
+  country: text("country").notNull().default(""), // ISO code, e.g. "DO" ("" = unknown)
+  source: text("source").notNull().default("Directo"), // classified channel label
+  referrer: text("referrer").notNull().default(""), // raw referrer host, for detail
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
