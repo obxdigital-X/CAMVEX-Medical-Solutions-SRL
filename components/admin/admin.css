@@ -216,6 +216,16 @@
   padding: 8px 12px;
   text-align: center;
 }
+.admin-auth-notice {
+  font-size: 13px;
+  color: var(--navy);
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  text-align: center;
+  line-height: 1.4;
+}
 .admin-auth-back {
   text-align: center;
   font-size: 13px;

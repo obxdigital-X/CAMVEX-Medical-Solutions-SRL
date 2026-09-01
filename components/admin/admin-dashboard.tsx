@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { endAdminSession } from "@/app/admin/actions/activity"
 import type { AdminUser } from "@/lib/admin-auth"
 import type { ManagedUser } from "@/app/admin/actions/users"
@@ -85,8 +85,12 @@ export function AdminDashboard({
               : "users"
   const [tab, setTab] = useState<Tab>(firstTab)
   const [loggingOut, setLoggingOut] = useState(false)
+  // Guards against firing the logout flow twice (e.g. button + idle timer).
+  const loggingOutRef = useRef(false)
 
-  async function handleLogout() {
+  const handleLogout = useCallback(async (reason?: "idle") => {
+    if (loggingOutRef.current) return
+    loggingOutRef.current = true
     setLoggingOut(true)
     // Sign out on the SERVER: this logs the exit and clears the session cookie
     // reliably (the client-side signOut fetch can fail to delete the cross-site
@@ -98,8 +102,37 @@ export function AdminDashboard({
     }
     // Hard navigation guarantees a fresh request with the cleared cookie, so
     // /admin renders the login screen instead of bouncing back to the dashboard.
-    window.location.href = "/admin"
-  }
+    // The `timeout` flag lets the login screen explain why the session ended.
+    window.location.href = reason === "idle" ? "/admin?timeout=1" : "/admin"
+  }, [])
+
+  // Auto-logout after 10 minutes without any interaction. Any activity resets
+  // the timer, so an actively-used panel never closes on its own.
+  useEffect(() => {
+    const IDLE_MS = 10 * 60 * 1000 // 10 minutes
+    let timer: ReturnType<typeof setTimeout>
+
+    const reset = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => handleLogout("idle"), IDLE_MS)
+    }
+
+    const events: (keyof WindowEventMap)[] = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "scroll",
+      "touchstart",
+      "click",
+    ]
+    for (const ev of events) window.addEventListener(ev, reset, { passive: true })
+    reset() // start the countdown
+
+    return () => {
+      clearTimeout(timer)
+      for (const ev of events) window.removeEventListener(ev, reset)
+    }
+  }, [handleLogout])
 
   return (
     <div className="admin-root">
@@ -113,7 +146,7 @@ export function AdminDashboard({
           <b>{me.name}</b>
           <span className="admin-role">{me.isAdmin ? "Administrador" : "Editor"}</span>
           <ChangeMyPassword />
-          <button className="admin-logout" onClick={handleLogout} disabled={loggingOut}>
+          <button className="admin-logout" onClick={() => handleLogout()} disabled={loggingOut}>
             {loggingOut ? "Saliendo…" : "Cerrar sesión"}
           </button>
         </div>
