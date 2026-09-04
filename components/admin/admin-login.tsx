@@ -4,7 +4,6 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
-import { logLogin } from "@/app/admin/actions/activity"
 import "./admin.css"
 
 export function AdminLogin() {
@@ -41,10 +40,8 @@ export function AdminLogin() {
         setLoading(false)
         return
       }
-      // Record the access in the Caché (best-effort; never blocks the redirect).
-      try {
-        await logLogin()
-      } catch {}
+      // The access is recorded in the Caché server-side by Better Auth's
+      // session-create hook (see lib/auth.ts), so no client call is needed here.
       // Signal the dashboard to play the welcome animation once after this login.
       try {
         sessionStorage.setItem("admin-just-logged-in", "1")

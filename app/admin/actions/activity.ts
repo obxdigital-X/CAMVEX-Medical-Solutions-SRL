@@ -37,18 +37,6 @@ export async function listActivity(): Promise<ActivityEntry[]> {
 }
 
 /**
- * Records that the current user entered the admin panel. Called right after a
- * successful sign-in (session is already valid). Best-effort: any user can log
- * their own access, and failures never block the login flow.
- */
-export async function logLogin(): Promise<void> {
-  const me = await getAdminUser()
-  if (!me) return
-  await logActivity(me, "login", "Accesos", "Entró al panel de administración")
-  revalidatePath("/admin/dashboard")
-}
-
-/**
  * Ends the current admin session from the SERVER: records the exit in the Caché
  * (while the session is still valid) and then signs out server-side, which
  * reliably clears the session cookie. Doing this on the server avoids the v0
