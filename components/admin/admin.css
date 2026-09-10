@@ -3117,15 +3117,13 @@
   gap: 8px;
   min-width: 0;
 }
-.stats-cc {
+.stats-flag {
   flex-shrink: 0;
-  font-family: var(--font-ibm-plex-mono), monospace;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--navy);
-  background: var(--paper-2);
-  border-radius: 5px;
-  padding: 2px 6px;
+  width: 24px;
+  height: 18px;
+  border-radius: 3px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--line);
 }
 .stats-bar-name {
   font-size: 13px;

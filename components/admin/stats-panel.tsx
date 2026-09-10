@@ -66,7 +66,16 @@ function BarList({ rows, kind }: { rows: CountRow[]; kind: "country" | "source" 
           <div key={r.label} className="stats-bar-row">
             <div className="stats-bar-label">
               {kind === "country" && r.label !== "Desconocido" && (
-                <span className="stats-cc">{r.label}</span>
+                <img
+                  className="stats-flag"
+                  src={`https://flagcdn.com/48x36/${r.label.toLowerCase()}.png`}
+                  srcSet={`https://flagcdn.com/96x72/${r.label.toLowerCase()}.png 2x`}
+                  width={24}
+                  height={18}
+                  alt={`Bandera de ${label}`}
+                  loading="lazy"
+                  decoding="async"
+                />
               )}
               <span className="stats-bar-name">{label}</span>
             </div>
