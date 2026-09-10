@@ -1,4 +1,5 @@
 import { getAdminUser } from "@/lib/admin-auth"
+import { recordAccess } from "@/lib/activity-log"
 import { redirect } from "next/navigation"
 import { listUsers } from "@/app/admin/actions/users"
 import { listEquipment } from "@/app/admin/actions/equipment"
@@ -15,6 +16,11 @@ import { AdminMaintenance } from "@/components/admin/admin-maintenance"
 export default async function DashboardPage() {
   const adminUser = await getAdminUser()
   if (!adminUser) redirect("/admin")
+
+  // Log the access here (not only on fresh login) so returning users with a
+  // still-valid session cookie — who never re-enter credentials — are also
+  // recorded in the Caché. Deduplicated per user over a 30-minute window.
+  await recordAccess(adminUser)
 
   // The admin can lock individual editors out with a maintenance notice.
   if (adminUser.maintenance) {
