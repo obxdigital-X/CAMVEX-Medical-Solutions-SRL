@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { endAdminSession } from "@/app/admin/actions/activity"
+import { setAdminOutage } from "@/app/admin/actions/admin-status"
 import type { AdminUser } from "@/lib/admin-auth"
 import type { ManagedUser } from "@/app/admin/actions/users"
 import type { EquipmentItem } from "@/app/admin/actions/equipment"
@@ -41,6 +42,7 @@ export function AdminDashboard({
   initialActivity,
   initialPartners,
   initialStats,
+  initialOutage,
 }: {
   me: AdminUser
   initialUsers: ManagedUser[]
@@ -53,7 +55,9 @@ export function AdminDashboard({
   initialActivity: ActivityEntry[]
   initialPartners: Partner[]
   initialStats: VisitStats
+  initialOutage: boolean
 }) {
+  const [outage, setOutage] = useState(initialOutage)
   const canCatalog = me.isAdmin || me.permissions.includes("catalog")
   const canMessages = me.isAdmin || me.permissions.includes("messages")
   const canSheets = me.isAdmin || me.permissions.includes("sheets")
@@ -134,6 +138,17 @@ export function AdminDashboard({
     }
   }, [handleLogout])
 
+  async function handleOutageToggle() {
+    const next = !outage
+    if (!confirm(next ? "¿Poner el panel fuera de servicio para los usuarios?" : "¿Restaurar el acceso al panel?") ) return
+    setOutage(next)
+    const result = await setAdminOutage(next)
+    if (!result.ok) {
+      setOutage(!next)
+      window.alert(result.error ?? "No se pudo actualizar el estado del panel.")
+    }
+  }
+
   return (
     <div className="admin-root">
       <AdminWelcome name={me.name} />
@@ -146,6 +161,15 @@ export function AdminDashboard({
           <b>{me.name}</b>
           <span className="admin-role">{me.isAdmin ? "Administrador" : "Editor"}</span>
           <ChangeMyPassword />
+          {me.isAdmin && (
+            <button
+              className={`admin-service-toggle ${outage ? "is-outage" : ""}`}
+              onClick={handleOutageToggle}
+              type="button"
+            >
+              {outage ? "Restaurar panel" : "Panel operativo"}
+            </button>
+          )}
           <button className="admin-logout" onClick={() => handleLogout()} disabled={loggingOut}>
             {loggingOut ? "Saliendo…" : "Cerrar sesión"}
           </button>

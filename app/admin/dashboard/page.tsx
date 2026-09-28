@@ -10,8 +10,10 @@ import { listQuotations } from "@/app/admin/actions/quotations"
 import { listActivity } from "@/app/admin/actions/activity"
 import { listPartners } from "@/app/admin/actions/partners"
 import { getVisitStats, type VisitStats } from "@/app/admin/actions/stats"
+import { getAdminOutageStatus } from "@/app/admin/actions/admin-status"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
 import { AdminMaintenance } from "@/components/admin/admin-maintenance"
+import { AdminOutage } from "@/components/admin/admin-outage"
 
 export default async function DashboardPage() {
   const adminUser = await getAdminUser()
@@ -25,6 +27,11 @@ export default async function DashboardPage() {
   // The admin can lock individual editors out with a maintenance notice.
   if (adminUser.maintenance) {
     return <AdminMaintenance name={adminUser.name} />
+  }
+
+  const adminOutage = await getAdminOutageStatus()
+  if (adminOutage && !adminUser.isAdmin) {
+    return <AdminOutage name={adminUser.name} />
   }
 
   const emptyStats: VisitStats = {
@@ -67,6 +74,7 @@ export default async function DashboardPage() {
       initialActivity={activity}
       initialPartners={partners}
       initialStats={stats}
+      initialOutage={adminOutage}
     />
   )
 }
