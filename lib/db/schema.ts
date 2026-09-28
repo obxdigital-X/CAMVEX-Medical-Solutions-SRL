@@ -3,6 +3,12 @@ import { pgTable, text, timestamp, boolean, serial, integer, primaryKey } from "
 // --- Better Auth required tables -------------------------------------------
 // Column names are camelCase to match Better Auth's defaults. Do not rename.
 
+export const adminStatus = pgTable("admin_status", {
+  id: integer("id").primaryKey(),
+  outage: boolean("outage").notNull().default(false),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
